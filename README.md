@@ -43,8 +43,6 @@ A **console-based Library Management System** built in **Java**, demonstrating *
 
 LibraryManagementSystem/
 
-│
-
 ├── LibrarySystem.java # Main program
 
 ├── books.csv # Book records
