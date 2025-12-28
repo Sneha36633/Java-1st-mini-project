@@ -1,1 +1,0 @@
-# Java-1st-mini-project

@@ -1,0 +1,311 @@
+# Library management system
+import java.io.*;
+import java.util.*;
+class User {
+    private String id;     
+    private String name;    
+    public User(String id, String name) { 
+        this.id = id;
+        this.name = name;
+    }
+
+    public String getId() { return id; } 
+    public String getName() { return name; } 
+    public void setName(String name) { this.name = name; } 
+}
+class Book {
+    private String id;         
+    private String title;      
+    private String author;     
+    private double price;      
+    private int quantity;      
+
+    public Book(String id, String title, String author, double price, int quantity) { 
+        this.id = id;
+        this.title = title;
+        this.author = author;
+        this.price = price;
+        this.quantity = quantity;
+    }
+    public String getId() { return id; }
+    public String getTitle() { return title; }
+    public String getAuthor() { return author; }
+    public double getPrice() { return price; }
+    public int getQuantity() { return quantity; }
+    public void setQuantity(int quantity) { this.quantity = quantity; }
+    public void setTitle(String title) { this.title = title; } 
+    public void setAuthor(String author) { this.author = author; } 
+    public void setPrice(double price) { this.price = price; } 
+
+    public boolean borrow() {
+        if (quantity > 0) { 
+            quantity--; 
+            return true;
+        }
+        return false;
+    }
+
+    public void returnBook() {
+        quantity++;
+    }
+
+    public String toCSV() {
+        return id + "," + title + "," + author + "," + price + "," + quantity;
+    }
+
+    @Override
+    public String toString() {
+        return id + " | " + title + " | " + author + " | " + price + " | " + quantity;
+    }
+}
+class Member extends User {
+    private String borrowedBookId; 
+
+    public Member(String id, String name, String borrowedBookId) {
+        super(id, name); 
+        this.borrowedBookId = borrowedBookId;
+    }
+
+    public String getBorrowedBookId() { return borrowedBookId; } 
+
+    public void borrowBook(String bookId) {
+        borrowedBookId = bookId;
+    }
+
+    public void returnBook() {
+        borrowedBookId = "NONE";
+    }
+
+    public String toCSV() {
+        return getId() + "," + getName() + "," + borrowedBookId;
+    }
+
+    @Override
+    public String toString() {
+        return getId() + " | " + getName() + " | " + borrowedBookId;
+    }
+}
+class Librarian extends User {
+
+    public Librarian(String id, String name) {
+        super(id, name); 
+    }
+
+    public void manageBook(Book book) { 
+        System.out.println("Managing book: " + book.getTitle());
+    }
+
+    public void manageBook(Book book, String action) { 
+        System.out.println("Action '" + action + "' performed on book: " + book.getTitle());
+    }
+}
+class Library {
+    private static final String BOOKS_FILE = "books.csv";  
+    private static final String MEMBERS_FILE = "members.csv";
+
+    private List<Book> books;    
+    private List<Member> members; 
+
+    public Library() throws IOException { 
+        books = new ArrayList<>();       
+        members = new ArrayList<>();
+        loadBooks();                     
+        loadMembers();
+    }
+    private void loadBooks() throws IOException { 
+        books.clear();
+        File f = new File(BOOKS_FILE);
+        if (!f.exists()) return;
+        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                books.add(new Book(parts[0], parts[1], parts[2],
+                        Double.parseDouble(parts[3]), Integer.parseInt(parts[4])));  
+            }
+        }
+    }
+
+    private void loadMembers() throws IOException { 
+        members.clear();
+        File f = new File(MEMBERS_FILE);
+        if (!f.exists()) return;
+        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                members.add(new Member(parts[0], parts[1], parts[2]));  
+            }
+        }
+    }
+
+    private void saveBooks() throws IOException { 
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(BOOKS_FILE))) {
+            for (Book b : books) bw.write(b.toCSV() + "\n"); 
+        }
+    }
+
+    private void saveMembers() throws IOException { 
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(MEMBERS_FILE))) {
+            for (Member m : members) bw.write(m.toCSV() + "\n"); 
+        }
+    }
+    public void listBooks() { 
+        if (books.isEmpty()) {
+            System.out.println("No books available.");
+            return;
+        }
+        System.out.println("\nBookID | Title | Author | Price | Qty");
+        for (Book b : books) System.out.println(b); 
+    }
+
+    public void addBook(Scanner sc) throws IOException { 
+        System.out.print("Enter Book ID: "); 
+        String id = sc.nextLine();
+        System.out.print("Title: "); 
+        String title = sc.nextLine();
+        System.out.print("Author: "); 
+        String author = sc.nextLine();
+        System.out.print("Price: "); 
+        double price = Double.parseDouble(sc.nextLine());
+        System.out.print("Quantity: "); 
+        int qty = Integer.parseInt(sc.nextLine());
+
+        books.add(new Book(id, title, author, price, qty)); 
+        saveBooks(); 
+        System.out.println("Book added successfully!");
+    }
+    public void updateBook(Scanner sc) throws IOException {
+        System.out.print("Enter Book ID to update: "); 
+        String bid = sc.nextLine();
+        Book book = null;
+        for (Book b : books) if (b.getId().equals(bid)) book = b;
+
+        if (book == null) {
+            System.out.println("Book not found!");
+            return;
+        }
+
+        System.out.print("Enter new Title: "); 
+        book.setTitle(sc.nextLine()); 
+        System.out.print("Enter new Author: "); 
+        book.setAuthor(sc.nextLine()); 
+        System.out.print("Enter new Price: "); 
+        book.setPrice(Double.parseDouble(sc.nextLine())); 
+        System.out.print("Enter new Quantity: "); 
+        book.setQuantity(Integer.parseInt(sc.nextLine())); 
+
+        saveBooks(); // Abstraction
+        System.out.println("Book updated successfully!");
+    }
+    public void deleteBook(Scanner sc) throws IOException {
+        System.out.print("Enter Book ID to delete: "); 
+        String bid = sc.nextLine();
+        Book book = null;
+        for (Book b : books) if (b.getId().equals(bid)) book = b;
+
+        if (book == null) {
+            System.out.println("Book not found!");
+            return;
+        }
+
+        books.remove(book); 
+        saveBooks(); 
+        System.out.println("Book deleted successfully!");
+    }
+
+    public void registerMember(Scanner sc) throws IOException {
+        System.out.print("Enter Member ID: "); 
+        String mid = sc.nextLine();
+        System.out.print("Name: "); 
+        String name = sc.nextLine();
+        members.add(new Member(mid, name, "NONE")); 
+        saveMembers(); 
+        System.out.println("Member registered successfully!");
+    }
+
+    public void borrowBook(Scanner sc) throws IOException { 
+        System.out.print("Enter Member ID: "); 
+        String mid = sc.nextLine();
+        System.out.print("Enter Book ID: "); 
+        String bid = sc.nextLine();
+
+        Member member = null; 
+        for (Member m : members) if (m.getId().equals(mid)) member = m; 
+
+        if (member == null) { 
+            System.out.println("Member not found!");
+            return;
+        }
+
+        if (!member.getBorrowedBookId().equals("NONE")) { 
+            System.out.println("Member already borrowed a book!");
+            return;
+        }
+
+        Book book = null; // Object reference
+        for (Book b : books) if (b.getId().equals(bid)) book = b;
+
+        if (book == null || book.getQuantity() == 0) { 
+            System.out.println("Book not found or out of stock!");
+            return;
+        }
+
+        book.borrow();     
+        member.borrowBook(bid); 
+        saveBooks(); 
+        saveMembers();
+        System.out.println("Book borrowed successfully!");
+    }
+
+    public void returnBook(Scanner sc) throws IOException { 
+        System.out.print("Enter Member ID: "); 
+        String mid = sc.nextLine();
+
+        Member member = null;
+        for (Member m : members) if (m.getId().equals(mid)) member = m;
+
+        if (member == null || member.getBorrowedBookId().equals("NONE")) { 
+            System.out.println("No borrowed book found for this member!");
+            return;
+        }
+
+        String bookId = member.getBorrowedBookId(); 
+        member.returnBook(); 
+
+        for (Book b : books) if (b.getId().equals(bookId)) b.returnBook(); 
+
+        saveBooks(); 
+        saveMembers();
+        System.out.println("Book returned successfully!");
+    }
+}
+public class system {
+    public static void main(String[] args) throws IOException {
+        Scanner sc = new Scanner(System.in);
+        Library lib = new Library(); 
+        Librarian librarian = new Librarian("L01","Admin"); 
+
+        int choice;
+        while (true) { 
+            System.out.println("\n--- Library Management System ---");
+            System.out.println("1. List Books\n2. Add Book\n3. Register Member");
+            System.out.println("4. Borrow Book\n5. Return Book\n6. Update Book (Librarian)");
+            System.out.println("7. Delete Book (Librarian)\n8. Exit");
+            System.out.print("Enter choice: ");
+            choice = Integer.parseInt(sc.nextLine());
+
+            switch (choice) { 
+                case 1 -> lib.listBooks(); 
+                case 2 -> lib.addBook(sc); 
+                case 3 -> lib.registerMember(sc); 
+                case 4 -> lib.borrowBook(sc); 
+                case 5 -> lib.returnBook(sc); 
+                case 6 -> lib.updateBook(sc); 
+                case 7 -> lib.deleteBook(sc); 
+                case 8 -> { System.out.println("Exiting..."); return; } 
+                default -> System.out.println("Invalid choice!"); 
+            }
+        }
+    }
+}
