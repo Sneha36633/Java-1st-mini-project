@@ -42,6 +42,7 @@ A **console-based Library Management System** built in **Java**, demonstrating *
 ## 🗂 Project Structure
 
 LibraryManagementSystem/
+
 │
 
 ├── LibrarySystem.java # Main program
